@@ -10,40 +10,53 @@ def topic_loc(df: pd.DataFrame, topic="all", subtopic="all") -> pd.DataFrame:
     return df
 
 def bin_conduit(df: pd.DataFrame, days = "all") -> pd.DataFrame:
-    df = df.drop(columns=['Процент порядка', 'Процент номера'])
     df = df.astype(float)
     if days == "all":
         df = df.replace([2,3,4,5,6,7,8], 1)
     else:
         df = df.replace(days, -1)
         df = df.replace([1,2,3,4,5,6,7,8], 0)
-        df = df.replace(-1,1) #потом переделать
+        df = df.replace(-1,1) 
     return df
-
-def competative_points(df: pd.DataFrame, topic="all", subtopic="all", weight_func="sqrt", days="all") -> pd.Series:
-    df = topic_loc(df, topic, subtopic)
-    df = bin_conduit(df, days)
-    df = df[df.sum(axis=1) != 0]
-    if weight_func == "sqrt":
-        df['Weights'] = 1/np.sqrt(df.sum(axis=1))
-        df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Weights'], axis=0)
-        return df.iloc[:, :-1].sum()
-    elif weight_func == "linear":
-        df['Weights'] = df.shape[1] - df.sum(axis=1)
-        df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Weights'], axis=0)
-        return df.iloc[:, :-1].sum()
 
 def total_problems(df: pd.DataFrame, topic="all", subtopic="all", days="all") -> pd.Series:
     return bin_conduit(topic_loc(df, topic, subtopic), days).sum()
 
-def work_points(df: pd.DataFrame, topic="all", subtopic="all", weight_func="linear", days="all") -> pd.Series:
-    df = bin_conduit(topic_loc(df, topic, subtopic), days)
+def competative_points(df: pd.DataFrame, topic="all", subtopic="all", weight_func="sqrt", days="all") -> pd.Series:
+    df = topic_loc(df, topic, subtopic)
+    df = bin_conduit(df, days)
+    if not('Comp_Weights' in df.columns):
+        df = add_comp_weight(df, weight_func = weight_func)
+    df = df[df.sum(axis=1) != 0]
+    df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Comp_Weights'], axis=0)
+    return df.iloc[:, :-1].sum()
+
+def work_points(df: pd.DataFrame, topic="all", subtopic="all", days="all", weight_func="linear") -> pd.Series:
+    df = topic_loc(df, topic, subtopic)
+    df = bin_conduit(df, days)
+    if not('Work_Weights' in df.columns):
+        df = add_work_weight(df, weight_func = weight_func)
+    df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Work_Weights'], axis=0)
+    return df.iloc[:, :-1].sum()
+    
+def add_comp_weight(df: pd.DataFrame, weight_func="sqrt") -> pd.DataFrame:
     df = df[df.sum(axis=1) != 0]
     if weight_func == "sqrt":
-        df['Weights'] = np.sqrt(df.sum(axis=1))
-        df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Weights'], axis=0)
-        return df.iloc[:, :-1].sum()
+        df.loc[:, 'Comp_Weights'] = 1/np.sqrt(df.sum(axis=1))
     elif weight_func == "linear":
-        df['Weights'] = df.sum(axis=1)
-        df.iloc[:, :-1] = df.iloc[:, :-1].mul(df['Weights'], axis=0)
-        return df.iloc[:, :-1].sum()
+        df.loc[:, 'Comp_Weights'] = df.shape[1] - df.sum(axis=1)
+    elif weight_func == "trifecta":
+        df.loc[:, 'Comp_Weights'] = np.where(df.sum(axis=1) <= 3, 1, 0)
+    return df
+
+def add_work_weight(df: pd.DataFrame, weight_func="linear") -> pd.DataFrame:
+    df = df[df.sum(axis=1) != 0]
+    if weight_func == "sqrt":
+        df.loc[:, 'Work_Weights'] = np.sqrt(df.sum(axis=1))
+    elif weight_func == "linear":
+        df.loc[:, 'Work_Weights'] = df.sum(axis=1)
+    return df
+
+def stats(df: pd.DataFrame) -> pd.DataFrame:
+    stats = pd.DataFrame(data=df.drop(columns=['Тема', 'Подтема']).columns(), columns=['Имя'])
+    stats["Соревновательные очки"] = competative_points(df, weight_func = "sqrt")
