@@ -67,18 +67,18 @@ def add_work_weight(df: pd.DataFrame, weight_func="linear") -> pd.DataFrame:
 def stats(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(data={ "Решенные задачи" : total_problems(df),
                             "Соревновательные очки" : competative_points(df, weight_func = "sqrt").to_numpy(),
-                            "Рабочие очки" : competative_points(df, weight_func = "linear").to_numpy(),
                             "Количество задач по комбинаторике" : total_problems(df, topic='Комбинаторика'),
                             "Соревновательные очки в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sqrt"),
-                            "Рабочие очки в комбинаторике" : work_points(df, topic='Комбинаторика', weight_func="linear"),
                             "Количество задач по ТЧ" : total_problems(df, topic='ТЧ'),
                             "Соревновательные очки в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sqrt"),
-                            "Рабочие очки в ТЧ" : work_points(df, topic='ТЧ', weight_func="linear"),
                             "Количество задач по графам" : total_problems(df, topic='Графы'),
                             "Соревновательные очки в графах" : competative_points(df, topic='Графы', weight_func="sqrt"),
-                            "Рабочие очки в графах" : work_points(df, topic='Графы', weight_func="linear"),
-                            "Стартовые соревновательные начальные очки" : competative_points(df, days=[1,2], weight_func='sqrt'),
-                            "Стартовые рабочие начальные очки" : work_points(df, days=[1,2], weight_func='sqrt')}).reset_index(names=["Имя"])
+                            "Стартовые соревновательные очки" : competative_points(df, days=[1,2], weight_func='sqrt')})
+
+def personal_stats(stats: pd.DataFrame, name: str):
+    print(name)
+    for stat in stats.columns:
+        print(f"{stat}: {np.round(stats[stat][name], 2)}, #{stats.shape[0] - np.argsort(stats[stat].sort_values(ascending=False))[name]}") 
 
 
 
