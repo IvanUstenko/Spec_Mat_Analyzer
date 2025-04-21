@@ -43,14 +43,16 @@ def add_comp_weight(df: pd.DataFrame, weight_func="sqrt") -> pd.DataFrame:
     df = df[df.sum(axis=1) != 0]
     if weight_func == "sqrt":
         df.loc[:, 'Comp_Weights'] = 1/np.sqrt(df.sum(axis=1))
+    elif weight_func == "const":
+        df.loc[:, 'Comp_Weights'] = 1
     elif weight_func == "linear":
         df.loc[:, 'Comp_Weights'] = df.shape[1] - df.sum(axis=1)
     elif weight_func == "trifecta":
         df.loc[:, 'Comp_Weights'] = np.where(df.sum(axis=1) <= 3, 1, 0)
     elif weight_func == "sigm":
         n = df.shape[1]
-        wmax = 0.99
-        wmin = 0.01
+        wmax = 0.999
+        wmin = 0.001
         b = -np.log(1/wmax - 1)
         k = (np.log(1/wmin - 1) - np.log(1/wmax - 1))/n
         df.loc[:, 'Comp_Weights'] = 1 / (1 + 2.71 ** (df.sum(axis=1) * k - b))
@@ -65,15 +67,16 @@ def add_work_weight(df: pd.DataFrame, weight_func="linear") -> pd.DataFrame:
     return df
 
 def stats(df: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(data={ "Решенные задачи" : total_problems(df),
-                            "Соревновательные очки" : competative_points(df, weight_func = "sqrt").to_numpy(),
-                            "Количество задач по комбинаторике" : total_problems(df, topic='Комбинаторика'),
-                            "Соревновательные очки в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sqrt"),
-                            "Количество задач по ТЧ" : total_problems(df, topic='ТЧ'),
-                            "Соревновательные очки в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sqrt"),
-                            "Количество задач по графам" : total_problems(df, topic='Графы'),
-                            "Соревновательные очки в графах" : competative_points(df, topic='Графы', weight_func="sqrt"),
-                            "Стартовые соревновательные очки" : competative_points(df, days=[1,2], weight_func='sqrt')})
+    return pd.DataFrame(data={
+                            "Соревновательные очки" : competative_points(df, weight_func = "sigm"),
+                            "Среднее кол-во очков за задачу" : competative_points(df, weight_func = "sigm").to_numpy() / total_problems(df),
+                            "Соревновательные очки в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sigm"),
+                            "Среднее кол-во очков за задачу в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sigm")  / total_problems(df, topic='Комбинаторика'),
+                            "Соревновательные очки в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sigm"),
+                            "Среднее кол-во очков за задачу в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sigm")  / total_problems(df, topic='ТЧ'),
+                            "Соревновательные очки в графах" : competative_points(df, topic='Графы', weight_func="sigm"),
+                            "Среднее кол-во очков за задачу в графах" : competative_points(df, topic='Графы', weight_func="sigm")  / total_problems(df, topic='Графы'),
+                            "Стартовые соревновательные очки" : competative_points(df, days=[1,2], weight_func='sigm')})
 
 def personal_stats(stats: pd.DataFrame, name: str):
     print(name)
