@@ -66,17 +66,15 @@ def add_work_weight(df: pd.DataFrame, weight_func="linear") -> pd.DataFrame:
         df.loc[:, 'Work_Weights'] = df.sum(axis=1)
     return df
 
-def stats(df: pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame(data={
+def stats(df: pd.DataFrame, topics: list) -> pd.DataFrame:
+    stats = pd.DataFrame(data={
                             "Соревновательные очки" : competative_points(df, weight_func = "sigm"),
-                            "Среднее кол-во очков за задачу" : competative_points(df, weight_func = "sigm").to_numpy() / total_problems(df),
-                            "Соревновательные очки в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sigm"),
-                            "Среднее кол-во очков за задачу в комбинаторике" : competative_points(df, topic='Комбинаторика', weight_func="sigm")  / total_problems(df, topic='Комбинаторика'),
-                            "Соревновательные очки в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sigm"),
-                            "Среднее кол-во очков за задачу в ТЧ" : competative_points(df, topic='ТЧ', weight_func="sigm")  / total_problems(df, topic='ТЧ'),
-                            "Соревновательные очки в графах" : competative_points(df, topic='Графы', weight_func="sigm"),
-                            "Среднее кол-во очков за задачу в графах" : competative_points(df, topic='Графы', weight_func="sigm")  / total_problems(df, topic='Графы'),
-                            "Стартовые соревновательные очки" : competative_points(df, days=[1,2], weight_func='sigm')})
+                            "Среднее кол-во очков за задачу" : competative_points(df, weight_func = "sigm").to_numpy() / total_problems(df)})
+    for i in topics:
+        stats.loc[:, f"Соревновательные очки в {i}"] = competative_points(df, topic=i, weight_func="sigm")
+        stats.loc[:, f"Среднее кол-во очков за задачу в {i}"] = competative_points(df, topic=i, weight_func="sigm")  / total_problems(df, topic=i)
+
+    return stats
 
 def personal_stats(stats: pd.DataFrame, name: str):
     print(name)
